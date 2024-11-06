@@ -40,6 +40,7 @@
             // 
             // canvas
             // 
+            canvas.BackColor = SystemColors.ControlLight;
             canvas.Location = new Point(12, 12);
             canvas.Name = "canvas";
             canvas.Size = new Size(606, 426);
@@ -58,11 +59,11 @@
             // 
             // alphaTrackBar
             // 
-            alphaTrackBar.Location = new Point(624, 105);
-            alphaTrackBar.Maximum = 45;
-            alphaTrackBar.Minimum = -45;
+            alphaTrackBar.Location = new Point(12, 446);
+            alphaTrackBar.Maximum = 90;
+            alphaTrackBar.Minimum = -90;
             alphaTrackBar.Name = "alphaTrackBar";
-            alphaTrackBar.Size = new Size(250, 69);
+            alphaTrackBar.Size = new Size(888, 69);
             alphaTrackBar.TabIndex = 2;
             alphaTrackBar.Scroll += alphaTrackBar_Scroll;
             // 
@@ -78,7 +79,7 @@
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(953, 450);
+            ClientSize = new Size(949, 527);
             Controls.Add(betaTrackBar);
             Controls.Add(alphaTrackBar);
             Controls.Add(divisionTrackBar);

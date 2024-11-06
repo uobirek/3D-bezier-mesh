@@ -13,6 +13,9 @@ namespace TriangleMesh.Classes
     public class BezierSurface
     {
         public List<Vector3> controlPoints = new List<Vector3>();
+        private float currentalpha = 0;
+        private float currentbeta = 0;
+
 
         public void Draw(Graphics g)
         {
@@ -20,12 +23,47 @@ namespace TriangleMesh.Classes
             {
                 g.DrawEllipse(new Pen(Color.Black), point.X, point.Y, 5, 5);
             }
+            DrawControlMesh(g, new Pen(Color.DarkRed));
+        }
+        public void DrawControlMesh(Graphics g, Pen pen)
+        {
+            int gridSize = (int)Math.Sqrt(controlPoints.Count); // zakładamy siatkę NxN, więc to będzie np. 4 dla 4x4
+
+            // Rysowanie połączeń poziomych
+            for (int y = 0; y < gridSize; y++)
+            {
+                for (int x = 0; x < gridSize - 1; x++)
+                {
+                    int index = y * gridSize + x;
+                    Vector3 start = controlPoints[index];
+                    Vector3 end = controlPoints[index + 1];
+
+                    g.DrawLine(pen, new PointF(start.X, start.Y), new PointF(end.X, end.Y));
+                }
+            }
+
+            // Rysowanie połączeń pionowych
+            for (int x = 0; x < gridSize; x++)
+            {
+                for (int y = 0; y < gridSize - 1; y++)
+                {
+                    int index = y * gridSize + x;
+                    Vector3 start = controlPoints[index];
+                    Vector3 end = controlPoints[index + gridSize];
+
+                    g.DrawLine(pen, new PointF(start.X, start.Y), new PointF(end.X, end.Y));
+                }
+            }
         }
 
         public void Rotate(float alpha, float beta)
         {
+            alpha = (float)(alpha * Math.PI / 180);
+            beta = (float)(beta * Math.PI / 180);
             for (int i = 0; i < controlPoints.Count; i++)
-                controlPoints[i] = RotatePoint(controlPoints[i], alpha, beta);
+                controlPoints[i] = RotatePoint(controlPoints[i], alpha - currentalpha, beta - currentbeta);
+            currentalpha = alpha;
+            currentbeta = beta;
         }
 
 
