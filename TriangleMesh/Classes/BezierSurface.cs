@@ -27,9 +27,9 @@ namespace TriangleMesh.Classes
         }
         public void DrawControlMesh(Graphics g, Pen pen)
         {
-            int gridSize = (int)Math.Sqrt(controlPoints.Count); // zakładamy siatkę NxN, więc to będzie np. 4 dla 4x4
+            int gridSize = (int)Math.Sqrt(controlPoints.Count);
 
-            // Rysowanie połączeń poziomych
+          
             for (int y = 0; y < gridSize; y++)
             {
                 for (int x = 0; x < gridSize - 1; x++)
@@ -42,7 +42,6 @@ namespace TriangleMesh.Classes
                 }
             }
 
-            // Rysowanie połączeń pionowych
             for (int x = 0; x < gridSize; x++)
             {
                 for (int y = 0; y < gridSize - 1; y++)
@@ -138,6 +137,45 @@ namespace TriangleMesh.Classes
                 Pu.Add(evaluateBezierCurve(curveP, u));
             }
             return evaluateBezierCurve(Pu, v);
+        }
+        public Vector3 vTangent(float u, float v)
+        {
+            List<Vector3> Pu = new List<Vector3>();
+            for (int i = 0; i < 4; i++)
+            {
+                List<Vector3> curveP = new List<Vector3>();
+                curveP.Add(controlPoints[i * 4]);
+                curveP.Add(controlPoints[i * 4 + 1]);
+                curveP.Add(controlPoints[i * 4 + 2]);
+                curveP.Add(controlPoints[i * 4 + 3]);
+                Pu.Add(evaluateBezierCurve(curveP, u));
+            }
+            return beziercurveTangent(Pu, v);
+        }
+        public Vector3 uTangent(float u, float v)
+        {
+            List<Vector3> Pv = new List<Vector3>();
+            for (int i = 0; i < 4; i++)
+            {
+                List<Vector3> curveP = new List<Vector3>();
+                curveP.Add(controlPoints[i * 4]);
+                curveP.Add(controlPoints[i * 4 + 1]);
+                curveP.Add(controlPoints[i * 4 + 2]);
+                curveP.Add(controlPoints[i * 4 + 3]);
+                Pv.Add(evaluateBezierCurve(curveP, v));
+            }
+            return beziercurveTangent(Pv, u);
+        }
+        private Vector3 beziercurveTangent(List<Vector3> curve, float t)
+        {
+            Vector3 P0 = curve[0];
+            Vector3 P1 = curve[1];
+            Vector3 P2 = curve[2];
+            Vector3 P3 = curve[3];
+            return -3 * P0 * (float)Math.Pow(1 - t, 2)
+                    + 3 * P1 * (float)(2 * (1 - t) * t)
+                    + 3 * P2 * (float)(2 * (1 - t) * t)
+                    - 3 * P3 * (float)Math.Pow(t, 2);
         }
 
 
