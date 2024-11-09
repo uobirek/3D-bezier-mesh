@@ -9,12 +9,15 @@ namespace TriangleMesh.Classes
 {
     public class Triangle
     {
-        List<Vertex> vertices = new List<Vertex>();
+        Vector3 LightSource = new Vector3(0, 0, 300);
+        public List<Vertex> vertices = new List<Vertex>();
         private Color fillColor;
+        float kd = 0.8f;
+        float ks = 0.8f;
         List<PointF> TurnToXY()
         {
             List<PointF> list = new List<PointF>();
-            foreach (var vertex in vertices) list.Add(new PointF(vertex.P.X, vertex.P.Y));
+            foreach (var vertex in vertices) list.Add(new PointF(vertex.P_.X, vertex.P_.Y));
             return list;
         }
         public void Draw(Graphics g)
@@ -36,8 +39,13 @@ namespace TriangleMesh.Classes
         }
 
 
-        public void Fill(Bitmap bm, int width, int height)
+        public void Fill(Bitmap bm, int width, int height, float kd, float ks, Vector3 LightSource)
         {
+            fillColor = Color.FromArgb(rnd.Next(256), rnd.Next(256), rnd.Next(256));
+
+            this.kd = kd;
+            this.ks = ks;
+            this.LightSource = LightSource;
             List<PointF> XYvertices = this.TurnToXY();
             List<(PointF vertex, int index)> sortedVertexes = new List<(PointF, int)>();
             for (int j = 0; j < XYvertices.Count; j++)
@@ -107,7 +115,7 @@ namespace TriangleMesh.Classes
             {
 
             }
-            fillColor = GetColor(x, y, this.vertices[0].P.Z, this.vertices[0].N);
+            //fillColor = GetColor(x, y, this.vertices[0].P_.Z, this.vertices[0].N_);
             float transformedX = x + width / 2;
 
             float transformedY = y + height / 2;
@@ -121,25 +129,33 @@ namespace TriangleMesh.Classes
 
             }
         }
-        Vector3 LightSource = new Vector3(100, 200, 300);
 
         public Color GetColor(float x, float y, float z, Vector3 N)
         {
-            float kd = 0.7f;
-            float ks = 0.5f;
-            float m = 10f;
+
+            float m = 10;
+
             Vector3 IL = new Vector3(1, 1, 1);
-            Vector3 IO = new Vector3(0.3f, 0.4f, 0.5f);
+           // IL = Vector3.Normalize(IL);
+
+            Vector3 IO = new Vector3(1.0f, 0.75f, 0.8f);
+        //    IO = Vector3.Normalize(IO);
+
             Vector3 L = new Vector3(LightSource.X - x, LightSource.Y - y, LightSource.Z - z);
+            L = Vector3.Normalize(L);
+
             Vector3 V = new Vector3(0, 0, 1);
+            V = Vector3.Normalize(V);
+
             Vector3 R = 2 * Vector3.Dot(N, L) * N - L;
             R = Vector3.Normalize(R);
-            L = Vector3.Normalize(L);
-            IO = Vector3.Normalize(IO);
-            IL = Vector3.Normalize(IL);
 
             float cosNL = Vector3.Dot(N, L);
+            if (cosNL < 0) cosNL = 0;
+
             float cosVR = Vector3.Dot(V, R);
+            if (cosVR < 0) cosVR = 0;
+
             Vector3 I = kd * IL * IO * cosNL + ks * IL * IO * (float)Math.Pow(cosVR, m);
             I.X = Math.Clamp(I.X * 255, 0, 255);
             I.Y = Math.Clamp(I.Y * 255, 0, 255);

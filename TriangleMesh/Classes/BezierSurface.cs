@@ -68,19 +68,21 @@ namespace TriangleMesh.Classes
 
         public static Vector3 RotatePoint(Vector3 point, float alpha, float beta)
         {
+            // Obrót wokół osi X o kąt alpha
             float cosAlpha = MathF.Cos(alpha);
             float sinAlpha = MathF.Sin(alpha);
-
-            float cosBeta = MathF.Cos(beta);
-            float sinBeta = MathF.Sin(beta);
 
             float y1 = cosAlpha * point.Y - sinAlpha * point.Z;
             float z1 = sinAlpha * point.Y + cosAlpha * point.Z;
             Vector3 rotatedX = new Vector3(point.X, y1, z1);
 
-            float x2 = cosBeta * rotatedX.X - sinBeta * rotatedX.Y;
-            float y2 = sinBeta * rotatedX.X + cosBeta * rotatedX.Y;
-            Vector3 rotatedXZ = new Vector3(x2, y2, rotatedX.Z);
+            // Obrót wokół osi Y o kąt beta (dotyczy X i Z)
+            float cosBeta = MathF.Cos(beta);
+            float sinBeta = MathF.Sin(beta);
+
+            float x2 = cosBeta * rotatedX.X + sinBeta * rotatedX.Z;
+            float z2 = -sinBeta * rotatedX.X + cosBeta * rotatedX.Z;
+            Vector3 rotatedXZ = new Vector3(x2, rotatedX.Y, z2);
 
             return rotatedXZ;
         }
@@ -158,10 +160,10 @@ namespace TriangleMesh.Classes
             for (int i = 0; i < 4; i++)
             {
                 List<Vector3> curveP = new List<Vector3>();
-                curveP.Add(controlPoints[i * 4]);
-                curveP.Add(controlPoints[i * 4 + 1]);
-                curveP.Add(controlPoints[i * 4 + 2]);
-                curveP.Add(controlPoints[i * 4 + 3]);
+                curveP.Add(controlPoints[i]);
+                curveP.Add(controlPoints[i + 4]);
+                curveP.Add(controlPoints[i + 8]);
+                curveP.Add(controlPoints[i + 12]);
                 Pv.Add(evaluateBezierCurve(curveP, v));
             }
             return beziercurveTangent(Pv, u);
@@ -173,9 +175,46 @@ namespace TriangleMesh.Classes
             Vector3 P2 = curve[2];
             Vector3 P3 = curve[3];
             return -3 * P0 * (float)Math.Pow(1 - t, 2)
-                    + 3 * P1 * (float)(2 * (1 - t) * t)
-                    + 3 * P2 * (float)(2 * (1 - t) * t)
-                    - 3 * P3 * (float)Math.Pow(t, 2);
+                    + 3 * P1 * (float)Math.Pow(1 - t, 2)
+                    - 6 * P1 * (float)(t) * (1 - t)
+                    - 3 * P2 * (float)Math.Pow(t, 2)
+                    + 6 * P2 * (float)(t) * (1 - t)
+                    + 3 * P3 * (float)Math.Pow(t, 2);
+        }
+
+        public Vector3 normalTangent(float u, float v)
+        {
+            // Oblicz tangenty w kierunku u i v
+            List<Vector3> Pu = new List<Vector3>();
+            for (int i = 0; i < 4; i++)
+            {
+                List<Vector3> curveP = new List<Vector3>();
+                curveP.Add(controlPoints[i * 4]);
+                curveP.Add(controlPoints[i * 4 + 1]);
+                curveP.Add(controlPoints[i * 4 + 2]);
+                curveP.Add(controlPoints[i * 4 + 3]);
+                Pu.Add(evaluateBezierCurve(curveP, u)); // Zakładając, że evaluateBezierCurve oblicza punkt na krzywej
+            }
+
+            List<Vector3> Pv = new List<Vector3>();
+            for (int i = 0; i < 4; i++)
+            {
+                List<Vector3> curveP = new List<Vector3>();
+                curveP.Add(controlPoints[i * 4]);
+                curveP.Add(controlPoints[i * 4 + 1]);
+                curveP.Add(controlPoints[i * 4 + 2]);
+                curveP.Add(controlPoints[i * 4 + 3]);
+                Pv.Add(evaluateBezierCurve(curveP, v)); // Oblicz punkt wzdłuż drugiego parametru
+            }
+
+            // Tangenty w kierunku u i v
+            Vector3 tangentU = beziercurveTangent(Pu, v);
+            Vector3 tangentV = beziercurveTangent(Pv, u);
+
+            // Normalna to iloczyn wektorowy tych dwóch tangentów
+            Vector3 normal = Vector3.Cross(tangentU, tangentV);
+            normal = Vector3.Normalize(normal); // Upewnij się, że normalna jest znormalizowana
+            return normal;
         }
 
 

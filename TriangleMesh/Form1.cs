@@ -9,7 +9,9 @@ namespace TriangleMesh
     {
         Mesh mesh;
         BezierSurface bezierSurface = new BezierSurface();
-
+        Vector3 LightSource = new Vector3(0, 300, 0);
+        float kd, ks;
+        int beta, alpha;
         public MainForm()
         {
             InitializeComponent();
@@ -22,15 +24,13 @@ namespace TriangleMesh
             Graphics g = e.Graphics;
             g.ScaleTransform(1, -1);
             g.TranslateTransform(canvas.Width / 2, -canvas.Height / 2);
-            //if (bezierSurface != null)
-            //{
-            //    bezierSurface.Draw(g);
-            //}
-         //   mesh.triangles.Insert(0,(new Triangle(new Vertex(new Vector3(-99, 167, 115)), new Vertex(new Vector3(-143, 36, -44)), new Vertex(new Vector3(37, 143, -23)))));
-            mesh.Draw(bitmap, g, canvas.Width, canvas.Height);
-            e.Graphics.DrawImage(bitmap, -canvas.Width/2, -canvas.Height/2);
-
-
+          
+            int lightSourceSize = 10;
+            g.FillEllipse(Brushes.Yellow, LightSource.X - lightSourceSize / 2, LightSource.Y - lightSourceSize / 2, lightSourceSize, lightSourceSize);
+            g.DrawString("Light Source", new Font("Arial", 8), Brushes.Black, LightSource.X + 10, LightSource.Y - 10);
+   
+            mesh.Draw(bitmap, g, canvas.Width, canvas.Height, kd, ks);
+            e.Graphics.DrawImage(bitmap, -canvas.Width / 2, -canvas.Height / 2);
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -38,33 +38,52 @@ namespace TriangleMesh
 
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "..\\..\\..\\BezierSurface.txt");
             bezierSurface.LoadControlPoints(filePath);
-            Rotate();
+            GetValues();
+            bezierSurface.Rotate(alpha, beta);
+            mesh.Create(bezierSurface, LightSource, divisionTrackBar.Value);
+            canvas.Invalidate();
+
+
+        }
+        private void GetValues()
+        {
+            kd = (float)kdTrackBar.Value / 10;
+            ks = (float)ksTrackBar.Value / 10;
+            beta = betaTrackBar.Value;
+            alpha = alphaTrackBar.Value;
         }
 
         private void divisionTrackBar_Scroll(object sender, EventArgs e)
         {
-            mesh.divisions = divisionTrackBar.Value;
-            mesh.Create(bezierSurface);
+            mesh.Create(bezierSurface, LightSource, divisionTrackBar.Value);
+            Update();
             canvas.Invalidate();
         }
 
         private void betaTrackBar_Scroll(object sender, EventArgs e)
         {
-            Rotate();
+            Update();
         }
         private void alphaTrackBar_Scroll(object sender, EventArgs e)
         {
-            Rotate();
+            Update();
         }
-        private void Rotate()
+        private void Update()
         {
-            int beta = betaTrackBar.Value;
-            int alpha = alphaTrackBar.Value;
+            GetValues();
             bezierSurface.Rotate(alpha, beta);
-            mesh.Create(bezierSurface);
+            mesh.Update(bezierSurface);
             canvas.Invalidate();
         }
 
-       
+        private void kdTrackBar_Scroll(object sender, EventArgs e)
+        {
+            Update();
+        }
+
+        private void ksTrackBar_Scroll(object sender, EventArgs e)
+        {
+            Update();
+        }
     }
 }
