@@ -7,6 +7,8 @@ namespace TriangleMesh
 {
     public partial class MainForm : Form
     {
+        Color lightColor = Color.White;
+        Color objectColor;
         Mesh mesh;
         BezierSurface bezierSurface = new BezierSurface();
         private System.Windows.Forms.Timer animationTimer;
@@ -20,15 +22,15 @@ namespace TriangleMesh
             lightAnimation = new LightAnimation();
 
             animationTimer = new System.Windows.Forms.Timer();
-            animationTimer.Interval = 1; 
-            animationTimer.Tick += OnAnimationTick;  
+            animationTimer.Interval = 1;
+            animationTimer.Tick += OnAnimationTick;
             animationTimer.Start();
         }
         private void OnAnimationTick(object sender, EventArgs e)
         {
             lightAnimation.Update();
 
-            canvas.Invalidate();  
+            canvas.Invalidate();
         }
 
         private void canvas_Paint(object sender, PaintEventArgs e)
@@ -38,10 +40,10 @@ namespace TriangleMesh
             Graphics g = e.Graphics;
             g.ScaleTransform(1, -1);
             g.TranslateTransform(canvas.Width / 2, -canvas.Height / 2);
-          
+
 
             //bezierSurface.Draw(g);
-            mesh.Draw(bitmap, g, canvas.Width, canvas.Height, kd, ks, LightSource);
+            mesh.Draw(bitmap, g, canvas.Width, canvas.Height, kd, ks, LightSource, lightColor, objectColor);
             e.Graphics.DrawImage(bitmap, -canvas.Width / 2, -canvas.Height / 2);
             int lightSourceSize = 10;
             g.FillEllipse(Brushes.Yellow, LightSource.X - lightSourceSize / 2, LightSource.Y - lightSourceSize / 2, lightSourceSize, lightSourceSize);
@@ -103,6 +105,23 @@ namespace TriangleMesh
 
         private void ksTrackBar_Scroll(object sender, EventArgs e)
         {
+            Update();
+        }
+
+        private void changeLightColorToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ColorDialog colorDialog = new ColorDialog
+            {
+                FullOpen = true
+            };
+
+            colorDialog.Color = lightColor;
+
+            if (colorDialog.ShowDialog() == DialogResult.OK)
+            {
+                lightColor = colorDialog.Color;
+                this.BackColor = lightColor;
+            }
             Update();
         }
     }

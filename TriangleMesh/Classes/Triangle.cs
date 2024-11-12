@@ -10,10 +10,14 @@ namespace TriangleMesh.Classes
     public class Triangle
     {
         Vector3 LightSource = new Vector3(0, 0, 300);
+        Color LightColor;
+        Color ObjectColor;
         public List<Vertex> vertices = new List<Vertex>();
         private Color fillColor;
+        public Bitmap Texture { get; set; }
         float kd = 0.8f;
         float ks = 0.8f;
+    
         List<PointF> TurnToXY()
         {
             List<PointF> list = new List<PointF>();
@@ -34,14 +38,14 @@ namespace TriangleMesh.Classes
             vertices.Add(a);
             vertices.Add(b);
             vertices.Add(c);
-        //    fillColor = Color.DarkBlue;
 
         }
 
 
-        public void Fill(Bitmap bm, int width, int height, float kd, float ks, Vector3 LightSource)
+        public void Fill(Bitmap bm, int width, int height, float kd, float ks, Vector3 LightSource, Color LightColor, Color ObjectColor)
         {
-            //    fillColor = Color.FromArgb(rnd.Next(256), rnd.Next(256), rnd.Next(256));
+            this.LightColor = LightColor;
+            this.ObjectColor = ObjectColor;
 
             this.kd = kd;
             this.ks = ks;
@@ -95,11 +99,8 @@ namespace TriangleMesh.Classes
                     int x2 = (int)Math.Round(currentedge.IntersectionX);
                     for (int x = x1; x <= x2; x++)
                     {
-
                         SetTransformedPixel(bm, x, y, width, height);
-
                     }
-
                 }
                 foreach (var edge in AET)
                 {
@@ -117,10 +118,6 @@ namespace TriangleMesh.Classes
             this.InterpolateNormalAndZ(x, y, out interpolatedNormal, out interpolatedZ);
 
             fillColor = GetColor(x, y, interpolatedZ, interpolatedNormal);
-            if (this.vertices[0].N.X == float.NaN)
-            {
-
-            }
 
             float transformedX = x + width / 2;
 
@@ -130,10 +127,7 @@ namespace TriangleMesh.Classes
             {
                 bitmap.SetPixel((int)transformedX, (int)transformedY, fillColor);
             }
-            else
-            {
 
-            }
         }
         private float TriangleArea(Vertex v0, Vertex v1, Vertex v2)
         {
@@ -144,7 +138,7 @@ namespace TriangleMesh.Classes
         {
             float area = TriangleArea(vertices[0], vertices[1], vertices[2]);
 
-            Vertex pVertex = new Vertex(P, 0, Vector3.Zero, Vector3.Zero);
+            Vertex pVertex = new Vertex(P, 0, Vector3.Zero, Vector3.Zero, 0, 0);
             float area1 = TriangleArea(pVertex, vertices[1], vertices[2]);
             float area2 = TriangleArea(vertices[0], pVertex, vertices[2]);
             float area3 = TriangleArea(vertices[0], vertices[1], pVertex);
@@ -169,11 +163,15 @@ namespace TriangleMesh.Classes
 
             float m = 20;
 
-            Vector3 IL = new Vector3(0.5f, 1.5f, 1f);
-           // IL = Vector3.Normalize(IL);
+            Vector3 IL = new Vector3(
+                LightColor.R / 255.0f, // Skala R
+                LightColor.G / 255.0f, // Skala G
+                LightColor.B / 255.0f  // Skala B
+            );
+            Color textureColor = GetTextureColor(x, y);  // Pobranie koloru z tekstury
+            Vector3 IO = new Vector3(textureColor.R / 255.0f, textureColor.G / 255.0f, textureColor.B / 255.0f);
 
-            Vector3 IO = new Vector3(0.3f, 0.5f, 0.9f);
-        //    IO = Vector3.Normalize(IO);
+          //  Vector3 IO = new Vector3(0.3f, 0.5f, 0.9f);
 
             Vector3 L = new Vector3(LightSource.X - x, LightSource.Y - y, LightSource.Z - z);
             L = Vector3.Normalize(L);
@@ -197,6 +195,29 @@ namespace TriangleMesh.Classes
             return Color.FromArgb((int)I.X, (int)I.Y, (int)I.Z);
 
         }
+        public Color GetTextureColor(float x, float y)
+        {
+            // Pobranie wierzchołków trójkąta
+            Vertex v0 = this.vertices[0];
+            Vertex v1 = this.vertices[1];
+            Vertex v2 = this.vertices[2];
+
+            // Oblicz współczynniki barycentryczne dla punktu (x, y)
+            float lambda0, lambda1, lambda2;
+            this.GetBarycentricCoordinates(new Vector3(x, y, 0), out lambda0, out lambda1, out lambda2);
+
+            // Interpolacja współrzędnych UV dla punktu (x, y) na podstawie współczynników barycentrycznych
+            float u = lambda0 * v0.u + lambda1 * v1.u + lambda2 * v2.u;
+            float v = lambda0 * v0.v + lambda1 * v1.v + lambda2 * v2.v;
+
+            // Zmapowanie współrzędnych (u, v) na wymiary tekstury
+            int textureX = (int)(u * Texture.Width);
+            int textureY = (int)(v * Texture.Height);
+
+            // Pobranie piksela z tekstury
+            return Texture.GetPixel(textureX, textureY);
+        }
+
 
     }
 
@@ -205,7 +226,7 @@ namespace TriangleMesh.Classes
         public PointF Start { get; set; }
         public PointF End { get; set; }
         public float IntersectionX { get; set; }
-        public float SlopeInverse { get; set; }  // 1 / slope, used to update x on each scanline
+        public float SlopeInverse { get; set; } 
 
         public Edge(PointF start, PointF end)
         {
