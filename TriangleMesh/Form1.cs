@@ -9,33 +9,51 @@ namespace TriangleMesh
     {
         Mesh mesh;
         BezierSurface bezierSurface = new BezierSurface();
-        Vector3 LightSource = new Vector3(0, 300, 0);
+        private System.Windows.Forms.Timer animationTimer;
+        private LightAnimation lightAnimation;
         float kd, ks;
         int beta, alpha;
         public MainForm()
         {
             InitializeComponent();
             mesh = new Mesh(divisionTrackBar.Value);
+            lightAnimation = new LightAnimation();
+
+            animationTimer = new System.Windows.Forms.Timer();
+            animationTimer.Interval = 1; 
+            animationTimer.Tick += OnAnimationTick;  
+            animationTimer.Start();
+        }
+        private void OnAnimationTick(object sender, EventArgs e)
+        {
+            lightAnimation.Update();
+
+            canvas.Invalidate();  
         }
 
         private void canvas_Paint(object sender, PaintEventArgs e)
         {
+            Vector3 LightSource = lightAnimation.GetLightSource();
             var bitmap = new Bitmap(this.canvas.Width, this.canvas.Height);
             Graphics g = e.Graphics;
             g.ScaleTransform(1, -1);
             g.TranslateTransform(canvas.Width / 2, -canvas.Height / 2);
           
+
+            //bezierSurface.Draw(g);
+            mesh.Draw(bitmap, g, canvas.Width, canvas.Height, kd, ks, LightSource);
+            e.Graphics.DrawImage(bitmap, -canvas.Width / 2, -canvas.Height / 2);
             int lightSourceSize = 10;
             g.FillEllipse(Brushes.Yellow, LightSource.X - lightSourceSize / 2, LightSource.Y - lightSourceSize / 2, lightSourceSize, lightSourceSize);
+            g.FillEllipse(Brushes.Red, 0, 0, lightSourceSize, lightSourceSize);
+
             g.DrawString("Light Source", new Font("Arial", 8), Brushes.Black, LightSource.X + 10, LightSource.Y - 10);
-   
-            mesh.Draw(bitmap, g, canvas.Width, canvas.Height, kd, ks);
-            e.Graphics.DrawImage(bitmap, -canvas.Width / 2, -canvas.Height / 2);
+
         }
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-
+            Vector3 LightSource = lightAnimation.GetLightSource();
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "..\\..\\..\\BezierSurface.txt");
             bezierSurface.LoadControlPoints(filePath);
             GetValues();
@@ -55,6 +73,8 @@ namespace TriangleMesh
 
         private void divisionTrackBar_Scroll(object sender, EventArgs e)
         {
+            Vector3 LightSource = lightAnimation.GetLightSource();
+
             mesh.Create(bezierSurface, LightSource, divisionTrackBar.Value);
             Update();
             canvas.Invalidate();

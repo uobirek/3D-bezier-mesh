@@ -23,37 +23,59 @@ namespace TriangleMesh.Classes
             {
                 g.DrawEllipse(new Pen(Color.Black), point.X, point.Y, 5, 5);
             }
-            DrawControlMesh(g, new Pen(Color.DarkRed));
+            DrawControlMesh(g, new Pen(Color.DarkRed), new SolidBrush(Color.DeepPink));
         }
-        public void DrawControlMesh(Graphics g, Pen pen)
+        public void DrawControlMesh(Graphics g, Pen pen, Brush fillBrush)
         {
             int gridSize = (int)Math.Sqrt(controlPoints.Count);
 
-          
-            for (int y = 0; y < gridSize; y++)
+            // Lista do przechowywania kwadratów wraz z ich wartościami Z
+            List<(PointF[] points, float Z)> quads = new List<(PointF[], float)>();
+
+            // Tworzenie kwadratów w siatce
+            for (int y = 0; y < gridSize - 1; y++)
             {
                 for (int x = 0; x < gridSize - 1; x++)
                 {
                     int index = y * gridSize + x;
-                    Vector3 start = controlPoints[index];
-                    Vector3 end = controlPoints[index + 1];
 
-                    g.DrawLine(pen, new PointF(start.X, start.Y), new PointF(end.X, end.Y));
+                    // Wierzchołki kwadratu
+                    Vector3 topLeft = controlPoints[index];
+                    Vector3 topRight = controlPoints[index + 1];
+                    Vector3 bottomLeft = controlPoints[index + gridSize];
+                    Vector3 bottomRight = controlPoints[index + gridSize + 1];
+
+                    // Przekształć wierzchołki na punkty 2D
+                    PointF[] quadPoints = {
+                new PointF(topLeft.X, topLeft.Y),
+                new PointF(topRight.X, topRight.Y),
+                new PointF(bottomRight.X, bottomRight.Y),
+                new PointF(bottomLeft.X, bottomLeft.Y)
+            };
+
+                    // Oblicz średnią wartość Z dla sortowania
+                    float averageZ = (topLeft.Z + topRight.Z + bottomLeft.Z + bottomRight.Z) / 4;
+
+                    // Dodaj kwadrat do listy
+                    quads.Add((quadPoints, averageZ));
                 }
             }
 
-            for (int x = 0; x < gridSize; x++)
-            {
-                for (int y = 0; y < gridSize - 1; y++)
-                {
-                    int index = y * gridSize + x;
-                    Vector3 start = controlPoints[index];
-                    Vector3 end = controlPoints[index + gridSize];
+            // Sortowanie kwadratów na podstawie wartości Z
+            quads.Sort((quad1, quad2) => quad1.Z.CompareTo(quad2.Z));
 
-                    g.DrawLine(pen, new PointF(start.X, start.Y), new PointF(end.X, end.Y));
-                }
+            // Rysowanie kwadratów od najniższego do najwyższego Z
+            foreach (var quad in quads)
+            {
+                // Wypełnienie kwadratu
+                g.FillPolygon(fillBrush, quad.points);
+
+                // Rysowanie konturu kwadratu
+                g.DrawPolygon(pen, quad.points);
             }
         }
+
+
 
         public void Rotate(float alpha, float beta)
         {
@@ -68,7 +90,6 @@ namespace TriangleMesh.Classes
 
         public static Vector3 RotatePoint(Vector3 point, float alpha, float beta)
         {
-            // Obrót wokół osi X o kąt alpha
             float cosAlpha = MathF.Cos(alpha);
             float sinAlpha = MathF.Sin(alpha);
 
@@ -76,7 +97,6 @@ namespace TriangleMesh.Classes
             float z1 = sinAlpha * point.Y + cosAlpha * point.Z;
             Vector3 rotatedX = new Vector3(point.X, y1, z1);
 
-            // Obrót wokół osi Y o kąt beta (dotyczy X i Z)
             float cosBeta = MathF.Cos(beta);
             float sinBeta = MathF.Sin(beta);
 
@@ -86,9 +106,6 @@ namespace TriangleMesh.Classes
 
             return rotatedXZ;
         }
-
-
-
 
         public void LoadControlPoints(string filePath)
         {
@@ -184,7 +201,6 @@ namespace TriangleMesh.Classes
 
         public Vector3 normalTangent(float u, float v)
         {
-            // Oblicz tangenty w kierunku u i v
             List<Vector3> Pu = new List<Vector3>();
             for (int i = 0; i < 4; i++)
             {
@@ -193,7 +209,7 @@ namespace TriangleMesh.Classes
                 curveP.Add(controlPoints[i * 4 + 1]);
                 curveP.Add(controlPoints[i * 4 + 2]);
                 curveP.Add(controlPoints[i * 4 + 3]);
-                Pu.Add(evaluateBezierCurve(curveP, u)); // Zakładając, że evaluateBezierCurve oblicza punkt na krzywej
+                Pu.Add(evaluateBezierCurve(curveP, u)); 
             }
 
             List<Vector3> Pv = new List<Vector3>();
@@ -204,16 +220,14 @@ namespace TriangleMesh.Classes
                 curveP.Add(controlPoints[i * 4 + 1]);
                 curveP.Add(controlPoints[i * 4 + 2]);
                 curveP.Add(controlPoints[i * 4 + 3]);
-                Pv.Add(evaluateBezierCurve(curveP, v)); // Oblicz punkt wzdłuż drugiego parametru
+                Pv.Add(evaluateBezierCurve(curveP, v));
             }
 
-            // Tangenty w kierunku u i v
             Vector3 tangentU = beziercurveTangent(Pu, v);
             Vector3 tangentV = beziercurveTangent(Pv, u);
 
-            // Normalna to iloczyn wektorowy tych dwóch tangentów
             Vector3 normal = Vector3.Cross(tangentU, tangentV);
-            normal = Vector3.Normalize(normal); // Upewnij się, że normalna jest znormalizowana
+            normal = Vector3.Normalize(normal); 
             return normal;
         }
 

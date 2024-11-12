@@ -46,10 +46,6 @@ namespace TriangleMesh.Classes
                     ));
                 }
             }
-
-
-
-
         }
 
         public void Update(BezierSurface bezierSurface)
@@ -61,38 +57,31 @@ namespace TriangleMesh.Classes
                 for (int i = 0; i <= divisions; i++)
                 {
                     float u = i / (float)divisions;
-                     grid[i, j].UpdateAfterRotation(bezierSurface.evaluateBezierSurface(u, v), bezierSurface.uTangent(u, v), bezierSurface.vTangent(u, v));
-                      
+                     grid[i, j].UpdateAfterRotation(bezierSurface.evaluateBezierSurface(u, v), bezierSurface.uTangent(u, v), bezierSurface.vTangent(u, v), LightSource);
                 }
             }
-           
         }
-        public void Draw(Bitmap bm, Graphics g, int width, int height, float kd, float ks)
+        public void Draw(Bitmap bm, Graphics g, int width, int height, float kd, float ks, Vector3 LightSource)
         {
+            this.LightSource = LightSource;
             if (triangles != null)
             {
-                foreach (Triangle triangle in triangles)
-                {
-                    triangle.Draw(g);
-                }
-
-
                 triangles.Sort((a, b) =>
                 {
-                    // Dla każdego trójkąta pobieramy maksymalną wartość Z z jego wierzchołków
-                    float maxZ_A = a.vertices.Max(vertex => vertex.P.Z);
-                    float maxZ_B = b.vertices.Max(vertex => vertex.P.Z);
+                    float avgZ_A = a.vertices.Average(vertex => vertex.P_.Z);
+                    float avgZ_B = b.vertices.Average(vertex => vertex.P_.Z);
 
-                    // Sortujemy malejąco - największe Z (bliżej obserwatora) będą pierwsze
-                    return maxZ_B.CompareTo(maxZ_A);
+                    return avgZ_A.CompareTo(avgZ_B);
                 });
 
                 foreach (Triangle triangle in triangles)
                 {
-                    triangle.Fill(bm, width, height, kd, ks, LightSource);
+                    triangle.Fill(bm, width, height, kd, ks, LightSource); 
+                  //  triangle.Draw(g);  
                 }
             }
-
         }
+
+
     }
 }

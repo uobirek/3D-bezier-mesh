@@ -34,14 +34,14 @@ namespace TriangleMesh.Classes
             vertices.Add(a);
             vertices.Add(b);
             vertices.Add(c);
-            fillColor = Color.DarkBlue;
+        //    fillColor = Color.DarkBlue;
 
         }
 
 
         public void Fill(Bitmap bm, int width, int height, float kd, float ks, Vector3 LightSource)
         {
-            fillColor = Color.FromArgb(rnd.Next(256), rnd.Next(256), rnd.Next(256));
+            //    fillColor = Color.FromArgb(rnd.Next(256), rnd.Next(256), rnd.Next(256));
 
             this.kd = kd;
             this.ks = ks;
@@ -95,6 +95,7 @@ namespace TriangleMesh.Classes
                     int x2 = (int)Math.Round(currentedge.IntersectionX);
                     for (int x = x1; x <= x2; x++)
                     {
+
                         SetTransformedPixel(bm, x, y, width, height);
 
                     }
@@ -109,13 +110,18 @@ namespace TriangleMesh.Classes
         }
         private Random rnd = new Random();
 
-        public void SetTransformedPixel(Bitmap bitmap, float x, float y, int width, int height)
+        public void SetTransformedPixel(Bitmap bitmap, float x, float y,  int width, int height)
         {
+            Vector3 interpolatedNormal;
+            float interpolatedZ;
+            this.InterpolateNormalAndZ(x, y, out interpolatedNormal, out interpolatedZ);
+
+            fillColor = GetColor(x, y, interpolatedZ, interpolatedNormal);
             if (this.vertices[0].N.X == float.NaN)
             {
 
             }
-            //fillColor = GetColor(x, y, this.vertices[0].P_.Z, this.vertices[0].N_);
+
             float transformedX = x + width / 2;
 
             float transformedY = y + height / 2;
@@ -129,16 +135,44 @@ namespace TriangleMesh.Classes
 
             }
         }
+        private float TriangleArea(Vertex v0, Vertex v1, Vertex v2)
+        {
+            return 0.5f * Math.Abs(v0.P_.X * (v1.P_.Y - v2.P_.Y) + v1.P_.X * (v2.P_.Y - v0.P_.Y) + v2.P_.X * (v0.P_.Y - v1.P_.Y));
+        }
+
+        public void GetBarycentricCoordinates(Vector3 P, out float lambda0, out float lambda1, out float lambda2)
+        {
+            float area = TriangleArea(vertices[0], vertices[1], vertices[2]);
+
+            Vertex pVertex = new Vertex(P, 0, Vector3.Zero, Vector3.Zero);
+            float area1 = TriangleArea(pVertex, vertices[1], vertices[2]);
+            float area2 = TriangleArea(vertices[0], pVertex, vertices[2]);
+            float area3 = TriangleArea(vertices[0], vertices[1], pVertex);
+
+
+            lambda0 = area1 / area;
+            lambda1 = area2 / area;
+            lambda2 = area3 / area;
+        }
+
+        public void InterpolateNormalAndZ(float x, float y, out Vector3 interpolatedNormal, out float interpolatedZ)
+        {
+            GetBarycentricCoordinates(new Vector3(x, y, 0), out float lambda0, out float lambda1, out float lambda2);
+
+            interpolatedNormal = lambda0 * vertices[0].N_ + lambda1 * vertices[1].N_ + lambda2 * vertices[2].N_;
+
+            interpolatedZ = lambda0 * vertices[0].P_.Z + lambda1 * vertices[1].P_.Z + lambda2 * vertices[2].P_.Z;
+        }
 
         public Color GetColor(float x, float y, float z, Vector3 N)
         {
 
-            float m = 10;
+            float m = 20;
 
-            Vector3 IL = new Vector3(1, 1, 1);
+            Vector3 IL = new Vector3(0.5f, 1.5f, 1f);
            // IL = Vector3.Normalize(IL);
 
-            Vector3 IO = new Vector3(1.0f, 0.75f, 0.8f);
+            Vector3 IO = new Vector3(0.3f, 0.5f, 0.9f);
         //    IO = Vector3.Normalize(IO);
 
             Vector3 L = new Vector3(LightSource.X - x, LightSource.Y - y, LightSource.Z - z);

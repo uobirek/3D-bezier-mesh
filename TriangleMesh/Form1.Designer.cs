@@ -69,8 +69,8 @@
             // 
             alphaTrackBar.Location = new Point(31, 660);
             alphaTrackBar.Margin = new Padding(2);
-            alphaTrackBar.Maximum = 90;
-            alphaTrackBar.Minimum = -90;
+            alphaTrackBar.Maximum = 180;
+            alphaTrackBar.Minimum = -180;
             alphaTrackBar.Name = "alphaTrackBar";
             alphaTrackBar.Size = new Size(888, 69);
             alphaTrackBar.TabIndex = 2;
@@ -81,8 +81,8 @@
             // 
             betaTrackBar.Location = new Point(32, 746);
             betaTrackBar.Margin = new Padding(2);
-            betaTrackBar.Maximum = 90;
-            betaTrackBar.Minimum = -90;
+            betaTrackBar.Maximum = 180;
+            betaTrackBar.Minimum = -180;
             betaTrackBar.Name = "betaTrackBar";
             betaTrackBar.Size = new Size(886, 69);
             betaTrackBar.TabIndex = 3;
