@@ -73,7 +73,7 @@ namespace TriangleMesh.Classes
                 }
             }
         }
-        public void Draw(Bitmap bm, Graphics g, int width, int height, float kd, float ks, Vector3 LightSource, Color LightColor, Color ObjectColor)
+        public void Draw(Bitmap bm, Graphics g, int width, int height, float kd, float ks, Vector3 LightSource, Color LightColor, Color ObjectColor, bool texture)
         {
             this.LightSource = LightSource;
             if (triangles != null)
@@ -88,7 +88,7 @@ namespace TriangleMesh.Classes
 
                 foreach (Triangle triangle in triangles)
                 {
-                    triangle.Fill(bm, width, height, kd, ks, LightSource, LightColor, ObjectColor); 
+                    triangle.Fill(bm, width, height, kd, ks, LightSource, LightColor, ObjectColor, texture); 
                 }
             }
         }

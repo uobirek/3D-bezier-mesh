@@ -13,8 +13,8 @@ namespace TriangleMesh.Classes
     public class BezierSurface
     {
         public List<Vector3> controlPoints = new List<Vector3>();
-        private float currentalpha = 0;
-        private float currentbeta = 0;
+        public float currentalpha = 0;
+        public float currentbeta = 0;
 
 
         public void Draw(Graphics g)
@@ -77,12 +77,13 @@ namespace TriangleMesh.Classes
 
 
 
-        public void Rotate(float alpha, float beta)
+        public void Rotate(float alpha, float beta, LightAnimation lightAnimation)
         {
             alpha = (float)(alpha * Math.PI / 180);
             beta = (float)(beta * Math.PI / 180);
             for (int i = 0; i < controlPoints.Count; i++)
                 controlPoints[i] = RotatePoint(controlPoints[i], alpha - currentalpha, beta - currentbeta);
+            lightAnimation.LightSource = RotatePoint(lightAnimation.LightSource, alpha - currentalpha, beta - currentbeta);
             currentalpha = alpha;
             currentbeta = beta;
         }

@@ -14,10 +14,11 @@ namespace TriangleMesh.Classes
         Color ObjectColor;
         public List<Vertex> vertices = new List<Vertex>();
         private Color fillColor;
-        public Bitmap Texture { get; set; }
+        public Bitmap? Texture { get; set; }
         float kd = 0.8f;
         float ks = 0.8f;
-    
+        bool texture;
+
         List<PointF> TurnToXY()
         {
             List<PointF> list = new List<PointF>();
@@ -42,11 +43,11 @@ namespace TriangleMesh.Classes
         }
 
 
-        public void Fill(Bitmap bm, int width, int height, float kd, float ks, Vector3 LightSource, Color LightColor, Color ObjectColor)
+        public void Fill(Bitmap bm, int width, int height, float kd, float ks, Vector3 LightSource, Color LightColor, Color ObjectColor, bool texture)
         {
             this.LightColor = LightColor;
             this.ObjectColor = ObjectColor;
-
+            this.texture = texture;
             this.kd = kd;
             this.ks = ks;
             this.LightSource = LightSource;
@@ -111,7 +112,7 @@ namespace TriangleMesh.Classes
         }
         private Random rnd = new Random();
 
-        public void SetTransformedPixel(Bitmap bitmap, float x, float y,  int width, int height)
+        public void SetTransformedPixel(Bitmap bitmap, float x, float y, int width, int height)
         {
             Vector3 interpolatedNormal;
             float interpolatedZ;
@@ -164,14 +165,18 @@ namespace TriangleMesh.Classes
             float m = 20;
 
             Vector3 IL = new Vector3(
-                LightColor.R / 255.0f, // Skala R
-                LightColor.G / 255.0f, // Skala G
-                LightColor.B / 255.0f  // Skala B
+                LightColor.R / 255.0f, 
+                LightColor.G / 255.0f, 
+                LightColor.B / 255.0f  
             );
-            Color textureColor = GetTextureColor(x, y);  // Pobranie koloru z tekstury
-            Vector3 IO = new Vector3(textureColor.R / 255.0f, textureColor.G / 255.0f, textureColor.B / 255.0f);
+            Vector3 IO;
+            if (texture)
+            {
+                Color textureColor = GetTextureColor(x, y);
+                IO = new Vector3(textureColor.R / 255.0f, textureColor.G / 255.0f, textureColor.B / 255.0f);
+            }
 
-          //  Vector3 IO = new Vector3(0.3f, 0.5f, 0.9f);
+            else IO = new Vector3(0.3f, 0.5f, 0.9f);
 
             Vector3 L = new Vector3(LightSource.X - x, LightSource.Y - y, LightSource.Z - z);
             L = Vector3.Normalize(L);
@@ -209,7 +214,8 @@ namespace TriangleMesh.Classes
             // Interpolacja współrzędnych UV dla punktu (x, y) na podstawie współczynników barycentrycznych
             float u = lambda0 * v0.u + lambda1 * v1.u + lambda2 * v2.u;
             float v = lambda0 * v0.v + lambda1 * v1.v + lambda2 * v2.v;
-
+            if (u > 1) u = 0.99f;
+            if (v > 1) v = 0.99f;
             // Zmapowanie współrzędnych (u, v) na wymiary tekstury
             int textureX = (int)(u * Texture.Width);
             int textureY = (int)(v * Texture.Height);
@@ -226,7 +232,7 @@ namespace TriangleMesh.Classes
         public PointF Start { get; set; }
         public PointF End { get; set; }
         public float IntersectionX { get; set; }
-        public float SlopeInverse { get; set; } 
+        public float SlopeInverse { get; set; }
 
         public Edge(PointF start, PointF end)
         {

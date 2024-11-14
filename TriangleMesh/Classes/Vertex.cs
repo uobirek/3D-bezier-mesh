@@ -47,7 +47,7 @@ namespace TriangleMesh.Classes
 
             if (N_.Length() < 1e-5)
             {
-                N_ = new Vector3(0, 0, 1); 
+                N_ = new Vector3(0, 0, 0); 
             }
             else
             {

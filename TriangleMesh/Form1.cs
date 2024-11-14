@@ -15,6 +15,7 @@ namespace TriangleMesh
         private LightAnimation lightAnimation;
         float kd, ks;
         int beta, alpha;
+        bool texture;
         public MainForm()
         {
             InitializeComponent();
@@ -43,7 +44,7 @@ namespace TriangleMesh
 
 
             //bezierSurface.Draw(g);
-            mesh.Draw(bitmap, g, canvas.Width, canvas.Height, kd, ks, LightSource, lightColor, objectColor);
+            mesh.Draw(bitmap, g, canvas.Width, canvas.Height, kd, ks, LightSource, lightColor, objectColor, texture);
             e.Graphics.DrawImage(bitmap, -canvas.Width / 2, -canvas.Height / 2);
             int lightSourceSize = 10;
             g.FillEllipse(Brushes.Yellow, LightSource.X - lightSourceSize / 2, LightSource.Y - lightSourceSize / 2, lightSourceSize, lightSourceSize);
@@ -59,9 +60,9 @@ namespace TriangleMesh
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "..\\..\\..\\BezierSurface.txt");
             bezierSurface.LoadControlPoints(filePath);
             GetValues();
-            bezierSurface.Rotate(alpha, beta);
-            mesh.Create(bezierSurface, LightSource, divisionTrackBar.Value);
-            canvas.Invalidate();
+            bezierSurface.Rotate(alpha, beta, lightAnimation);
+             mesh.Create(bezierSurface, LightSource, divisionTrackBar.Value);
+            Update();
 
 
         }
@@ -93,9 +94,12 @@ namespace TriangleMesh
         private void Update()
         {
             GetValues();
-            bezierSurface.Rotate(alpha, beta);
+
+            bezierSurface.Rotate(alpha, beta, lightAnimation);
+
             mesh.Update(bezierSurface);
             canvas.Invalidate();
+            
         }
 
         private void kdTrackBar_Scroll(object sender, EventArgs e)
@@ -120,9 +124,20 @@ namespace TriangleMesh
             if (colorDialog.ShowDialog() == DialogResult.OK)
             {
                 lightColor = colorDialog.Color;
-                this.BackColor = lightColor;
             }
             Update();
+        }
+
+        private void colorRadioButton_CheckedChanged(object sender, EventArgs e)
+        {
+            texture = false;
+            textureRadioButton.Checked = true;
+        }
+
+        private void textureRadioButton_CheckedChanged(object sender, EventArgs e)
+        {
+            texture = true;
+            colorRadioButton.Checked = false;
         }
     }
 }
