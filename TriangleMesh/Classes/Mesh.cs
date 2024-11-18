@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -17,14 +18,21 @@ namespace TriangleMesh.Classes
         Color ObjectColor;
 
         public Bitmap Texture { get; set; }
+        public Bitmap NormalMap { get; set; }
         public void LoadTexture(string filePath)
         {
             Texture = new Bitmap(filePath);
+            Texture.RotateFlip(RotateFlipType.Rotate180FlipNone);
+        }
+        public void LoadNormalMap(string fileName)
+        {
+            NormalMap = new Bitmap(fileName);
+            NormalMap.RotateFlip(RotateFlipType.Rotate180FlipNone);
+
         }
         public void Create(BezierSurface bezierSurface, Vector3 LightSource, int divisions)
         {
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "..\\..\\..\\stones.jpeg");
-            LoadTexture(filePath);
+
             this.divisions = divisions;
             this.LightSource = LightSource;
             grid = new Vertex[divisions + 1, divisions + 1];
@@ -47,14 +55,15 @@ namespace TriangleMesh.Classes
                         grid[i + 1, j],
                         grid[i, j + 1]
                     ));
-                    triangles.Last().Texture = Texture;
+
+
 
                     triangles.Add(new Triangle(
                         grid[i + 1, j],
                         grid[i + 1, j + 1],
                         grid[i, j + 1]
                     ));
-                    triangles.Last().Texture = Texture;
+
 
                 }
             }
@@ -69,11 +78,11 @@ namespace TriangleMesh.Classes
                 for (int i = 0; i <= divisions; i++)
                 {
                     float u = i / (float)divisions;
-                     grid[i, j].Update(bezierSurface.evaluateBezierSurface(u, v), bezierSurface.uTangent(u, v), bezierSurface.vTangent(u, v), LightSource);
+                    grid[i, j].Update(bezierSurface.evaluateBezierSurface(u, v), bezierSurface.uTangent(u, v), bezierSurface.vTangent(u, v), LightSource, u, v);
                 }
             }
         }
-        public void Draw(Bitmap bm, Graphics g, int width, int height, float kd, float ks, Vector3 LightSource, Color LightColor, Color ObjectColor, bool texture)
+        public void Draw(Bitmap bm, Graphics g, int width, int height, float kd, float ks, int m, Vector3 LightSource, Color LightColor, Color ObjectColor, bool texture)
         {
             this.LightSource = LightSource;
             if (triangles != null)
@@ -88,7 +97,9 @@ namespace TriangleMesh.Classes
 
                 foreach (Triangle triangle in triangles)
                 {
-                    triangle.Fill(bm, width, height, kd, ks, LightSource, LightColor, ObjectColor, texture); 
+                    triangle.NormalMap = NormalMap;
+                    triangle.Texture = Texture;
+                    triangle.Fill(bm, width, height, kd, ks, m, LightSource, LightColor, ObjectColor, texture);
                 }
             }
         }

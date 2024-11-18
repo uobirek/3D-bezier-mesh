@@ -15,8 +15,12 @@ namespace TriangleMesh.Classes
         public List<Vertex> vertices = new List<Vertex>();
         private Color fillColor;
         public Bitmap? Texture { get; set; }
+
+        public Bitmap? NormalMap { get; set; }
+
         float kd = 0.8f;
         float ks = 0.8f;
+        int m = 40;
         bool texture;
 
         List<PointF> TurnToXY()
@@ -43,13 +47,14 @@ namespace TriangleMesh.Classes
         }
 
 
-        public void Fill(Bitmap bm, int width, int height, float kd, float ks, Vector3 LightSource, Color LightColor, Color ObjectColor, bool texture)
+        public void Fill(Bitmap bm, int width, int height, float kd, float ks, int m, Vector3 LightSource, Color LightColor, Color ObjectColor, bool texture)
         {
             this.LightColor = LightColor;
             this.ObjectColor = ObjectColor;
             this.texture = texture;
             this.kd = kd;
             this.ks = ks;
+            this.m = m;
             this.LightSource = LightSource;
             List<PointF> XYvertices = this.TurnToXY();
             List<(PointF vertex, int index)> sortedVertexes = new List<(PointF, int)>();
@@ -98,7 +103,7 @@ namespace TriangleMesh.Classes
                     Edge currentedge = AET[i + 1];
                     int x1 = (int)Math.Round(previousedge.IntersectionX);
                     int x2 = (int)Math.Round(currentedge.IntersectionX);
-                    for (int x = x1; x <= x2; x++)
+                    for (int x = x1; x < x2; x++)
                     {
                         SetTransformedPixel(bm, x, y, width, height);
                     }
@@ -116,10 +121,9 @@ namespace TriangleMesh.Classes
         {
             Vector3 interpolatedNormal;
             float interpolatedZ;
-            this.InterpolateNormalAndZ(x, y, out interpolatedNormal, out interpolatedZ);
+            this.InterpolateNormalAndZ(((vertices[0].P_.X + vertices[1].P_.X + vertices[2].P_.X) / 3), (vertices[0].P_.Y + vertices[1].P_.Y + vertices[2].P_.Y) / 3, out interpolatedNormal, out interpolatedZ);
 
             fillColor = GetColor(x, y, interpolatedZ, interpolatedNormal);
-
             float transformedX = x + width / 2;
 
             float transformedY = y + height / 2;
@@ -129,12 +133,12 @@ namespace TriangleMesh.Classes
                 bitmap.SetPixel((int)transformedX, (int)transformedY, fillColor);
             }
 
+
         }
         private float TriangleArea(Vertex v0, Vertex v1, Vertex v2)
         {
-            return 0.5f * Math.Abs(v0.P_.X * (v1.P_.Y - v2.P_.Y) + v1.P_.X * (v2.P_.Y - v0.P_.Y) + v2.P_.X * (v0.P_.Y - v1.P_.Y));
+            return 0.5f * Math.Abs((v1.P_.X - v0.P_.X) * (v2.P_.Y - v0.P_.Y) - (v2.P_.X - v0.P_.X) * (v1.P_.Y - v0.P_.Y));
         }
-
         public void GetBarycentricCoordinates(Vector3 P, out float lambda0, out float lambda1, out float lambda2)
         {
             float area = TriangleArea(vertices[0], vertices[1], vertices[2]);
@@ -145,9 +149,13 @@ namespace TriangleMesh.Classes
             float area3 = TriangleArea(vertices[0], vertices[1], pVertex);
 
 
-            lambda0 = area1 / area;
-            lambda1 = area2 / area;
-            lambda2 = area3 / area;
+            lambda0 = Math.Clamp(area1 / area, 0, 1);
+            lambda1 = Math.Clamp(area2 / area, 0, 1);
+            lambda2 = Math.Clamp(area3 / area, 0, 1);
+            float sum = lambda0 + lambda1 + lambda2;
+            lambda0 /= sum;
+            lambda1 /= sum;
+            lambda2 /= sum;
         }
 
         public void InterpolateNormalAndZ(float x, float y, out Vector3 interpolatedNormal, out float interpolatedZ)
@@ -161,13 +169,32 @@ namespace TriangleMesh.Classes
 
         public Color GetColor(float x, float y, float z, Vector3 N)
         {
+            Vertex v0 = this.vertices[0];
+            Vertex v1 = this.vertices[1];
+            Vertex v2 = this.vertices[2];
 
-            float m = 20;
+            float lambda0, lambda1, lambda2;
+            this.GetBarycentricCoordinates(new Vector3(x, y, 0), out lambda0, out lambda1, out lambda2);
 
+            float u = lambda0 * v0.u + lambda1 * v1.u + lambda2 * v2.u;
+            float v = lambda0 * v0.v + lambda1 * v1.v + lambda2 * v2.v;
+
+            u = Math.Clamp(u, 0f, 1f);
+            v = Math.Clamp(v, 0f, 1f);
+            Vector3 N_texture = GetNormalFromTexture(u, v);
+
+
+
+            Matrix4x4 M = CreateTransformationMatrix(N);
+            N_texture = TransformNormal(N_texture, M);
+
+
+            N = N_texture;
+            N = Vector3.Normalize(N);
             Vector3 IL = new Vector3(
-                LightColor.R / 255.0f, 
-                LightColor.G / 255.0f, 
-                LightColor.B / 255.0f  
+                LightColor.R / 255.0f,
+                LightColor.G / 255.0f,
+                LightColor.B / 255.0f
             );
             Vector3 IO;
             if (texture)
@@ -175,8 +202,11 @@ namespace TriangleMesh.Classes
                 Color textureColor = GetTextureColor(x, y);
                 IO = new Vector3(textureColor.R / 255.0f, textureColor.G / 255.0f, textureColor.B / 255.0f);
             }
+            else
+            {
+                IO = new Vector3(ObjectColor.R / 255.0f, ObjectColor.G / 255.0f, ObjectColor.B / 255.0f);
 
-            else IO = new Vector3(0.3f, 0.5f, 0.9f);
+            }
 
             Vector3 L = new Vector3(LightSource.X - x, LightSource.Y - y, LightSource.Z - z);
             L = Vector3.Normalize(L);
@@ -200,32 +230,82 @@ namespace TriangleMesh.Classes
             return Color.FromArgb((int)I.X, (int)I.Y, (int)I.Z);
 
         }
+
+
+        public Vector3 GetNormalFromTexture(float u, float v)
+        {
+            int textureX = (int)(u * NormalMap.Width);
+            int textureY = (int)(v * NormalMap.Height);
+            if (textureX == NormalMap.Width) textureX--;
+            if (textureY == NormalMap.Height) textureY--;
+            Color normalColor = NormalMap.GetPixel(textureX, textureY);
+
+
+            Vector3 N_texture = new Vector3(
+                (normalColor.R / 255.0f) * 2.0f - 1.0f,
+                (normalColor.G / 255.0f) * 2.0f - 1.0f,
+                (normalColor.B / 255.0f) * 2.0f - 1.0f
+            );
+
+
+
+            return N_texture;
+        }
+
+        public Matrix4x4 CreateTransformationMatrix(Vector3 N_surface)
+        {
+            Vector3 P_u = vertices[1].Pu_;
+            Vector3 P_v = vertices[2].Pv_;
+
+            P_u = Vector3.Normalize(P_u);
+            P_v = Vector3.Normalize(P_v);
+            N_surface = Vector3.Normalize(N_surface);
+
+            Matrix4x4 M = new Matrix4x4(
+                P_u.X, P_u.Y, P_u.Z, 0,
+                P_v.X, P_v.Y, P_v.Z, 0,
+                N_surface.X, N_surface.Y, N_surface.Z, 0,
+                0, 0, 0, 1
+            );
+            return M;
+        }
+        public Vector3 TransformNormal(Vector3 N_texture, Matrix4x4 M)
+        {
+            return Vector3.Transform(N_texture, M);
+        }
+
+
+
+
         public Color GetTextureColor(float x, float y)
         {
-            // Pobranie wierzchołków trójkąta
             Vertex v0 = this.vertices[0];
             Vertex v1 = this.vertices[1];
             Vertex v2 = this.vertices[2];
 
-            // Oblicz współczynniki barycentryczne dla punktu (x, y)
             float lambda0, lambda1, lambda2;
             this.GetBarycentricCoordinates(new Vector3(x, y, 0), out lambda0, out lambda1, out lambda2);
 
-            // Interpolacja współrzędnych UV dla punktu (x, y) na podstawie współczynników barycentrycznych
             float u = lambda0 * v0.u + lambda1 * v1.u + lambda2 * v2.u;
             float v = lambda0 * v0.v + lambda1 * v1.v + lambda2 * v2.v;
-            if (u > 1) u = 0.99f;
-            if (v > 1) v = 0.99f;
-            // Zmapowanie współrzędnych (u, v) na wymiary tekstury
+
+
+            u = Math.Clamp(u, 0f, 1f);
+            v = Math.Clamp(v, 0f, 1f);
+
             int textureX = (int)(u * Texture.Width);
             int textureY = (int)(v * Texture.Height);
 
-            // Pobranie piksela z tekstury
+            if (textureX == Texture.Width) textureX--;
+            if (textureY == Texture.Height) textureY--;
+
             return Texture.GetPixel(textureX, textureY);
         }
 
 
     }
+
+
 
     public class Edge
     {

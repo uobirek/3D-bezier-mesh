@@ -83,7 +83,7 @@ namespace TriangleMesh.Classes
             beta = (float)(beta * Math.PI / 180);
             for (int i = 0; i < controlPoints.Count; i++)
                 controlPoints[i] = RotatePoint(controlPoints[i], alpha - currentalpha, beta - currentbeta);
-            lightAnimation.LightSource = RotatePoint(lightAnimation.LightSource, alpha - currentalpha, beta - currentbeta);
+            lightAnimation.SetAlphaBeta(alpha, beta);
             currentalpha = alpha;
             currentbeta = beta;
         }
@@ -210,7 +210,7 @@ namespace TriangleMesh.Classes
                 curveP.Add(controlPoints[i * 4 + 1]);
                 curveP.Add(controlPoints[i * 4 + 2]);
                 curveP.Add(controlPoints[i * 4 + 3]);
-                Pu.Add(evaluateBezierCurve(curveP, u)); 
+                Pu.Add(evaluateBezierCurve(curveP, u));
             }
 
             List<Vector3> Pv = new List<Vector3>();
@@ -228,7 +228,7 @@ namespace TriangleMesh.Classes
             Vector3 tangentV = beziercurveTangent(Pv, u);
 
             Vector3 normal = Vector3.Cross(tangentU, tangentV);
-            normal = Vector3.Normalize(normal); 
+            normal = Vector3.Normalize(normal);
             return normal;
         }
 
